@@ -49,18 +49,20 @@ export default function DataKKPage() {
   // SAVE DATA
   const handleSave = async () => {
     try {
-      await axios.post(API_URL, formData);
+      // Pastikan key-nya: no_kk, kepala, nik_kepala
+      const payload = {
+        no_kk: formData.no_kk,
+        kepala: formData.kepala,
+        nik_kepala: formData.nik_kepala
+      };
+      
+      await axios.post(API_URL, payload); // axios otomatis mengubah object ke JSON
       setIsAddOpen(false);
       setFormData({ no_kk: '', kepala: '', nik_kepala: '' });
-      fetchData(); // Refresh data
+      fetchData();
     } catch (error) {
-      console.warn("Gagal simpan data KK ke server, menyimpan secara lokal.");
-      const newId = dataKK.length > 0 ? Math.max(...dataKK.map(d => d.id || 0)) + 1 : 1;
-      const newDataList = [...dataKK, { id: newId, ...formData }];
-      setDataKK(newDataList);
-      localStorage.setItem('mockDataKK', JSON.stringify(newDataList));
-      setIsAddOpen(false);
-      setFormData({ no_kk: '', kepala: '', nik_kepala: '' });
+      console.error(error);
+      alert("Gagal simpan data! Cek terminal backend untuk detail error-nya.");
     }
   };
 

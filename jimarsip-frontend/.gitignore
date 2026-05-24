@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Folder
+node_modules
+venv
+.next
+__pycache__
+
+# File Sensitif
+.env
+credentials.json
+jimarsip.db

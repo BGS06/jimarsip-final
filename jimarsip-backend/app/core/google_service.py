@@ -3,33 +3,28 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 import gspread
+import traceback
 
-# Tentukan scope yang diizinkan untuk akses Google API
+# Scope API
 SCOPES = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/spreadsheets'
 ]
 
-# Path ke file kredensial
-CREDENTIALS_FILE = os.path.join(os.getcwd(), "credentials.json")
+# PERBAIKAN PATH: Menggunakan path absolut relatif terhadap file ini
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+CREDENTIALS_FILE = os.path.join(BASE_DIR, "credentials.json")
 
 def get_credentials():
-    """Mengambil kredensial Google Service Account dari credentials.json."""
+    print(f"DEBUG: Mencari file di: {CREDENTIALS_FILE}") # Tambahkan ini
     if not os.path.exists(CREDENTIALS_FILE):
-        raise FileNotFoundError(
-            f"Kredensial Google Service Account tidak ditemukan! Harap letakkan file "
-            f"service account Anda dengan nama '{CREDENTIALS_FILE}' di folder root backend."
-        )
+        raise FileNotFoundError(f"File kredensial tidak ditemukan di: {CREDENTIALS_FILE}")
     
+    # Tambahkan print ini untuk memastikan file bisa terbaca
+    print("DEBUG: File ditemukan, mencoba autentikasi...") 
     return Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
 
 def upload_to_drive(file_path: str, file_name: str, folder_id: str = None) -> str:
-    """
-    Mengunggah file ke Google Drive menggunakan Service Account.
-    CATATAN: Karena Service Account memiliki kuota 0 Byte pada Drive personal,
-    folder_id harus merujuk ke folder di dalam Shared Drive (Drive Bersama) 
-    dimana Service Account telah diberi akses sebagai Kontributor/Editor.
-    """
     credentials = get_credentials()
     service = build('drive', 'v3', credentials=credentials)
 
@@ -38,41 +33,35 @@ def upload_to_drive(file_path: str, file_name: str, folder_id: str = None) -> st
         file_metadata['parents'] = [folder_id]
 
     media = MediaFileUpload(file_path, resumable=True)
-    
-    # Upload file (supportsAllDrives=True wajib diaktifkan untuk Shared Drive)
     uploaded_file = service.files().create(
         body=file_metadata,
         media_body=media,
         fields='id, webViewLink',
         supportsAllDrives=True
     ).execute()
-    
     return uploaded_file.get('webViewLink')
 
 def create_or_update_spreadsheet(spreadsheet_id: str, data: list):
-    """Memperbarui data di dalam Google Spreadsheet yang sudah ada."""
     credentials = get_credentials()
-    # gspread mempermudah manipulasi google spreadsheet
     client = gspread.authorize(credentials)
     
     try:
-        # Buka spreadsheet menggunakan ID-nya
-        sheet = client.open_by_key(spreadsheet_id).sheet1
-        # Hapus konten lama untuk ditimpa (Sync)
+        spreadsheet = client.open_by_key(spreadsheet_id)
+        sheet = spreadsheet.sheet1
         sheet.clear()
-    except gspread.exceptions.SpreadsheetNotFound:
-        raise Exception(f"Spreadsheet dengan ID {spreadsheet_id} tidak ditemukan.")
         
-    # Memasukkan header jika data tidak kosong
-    if data:
-        # Ambil nama-nama kolom dari dictionary pertama
-        headers = list(data[0].keys())
-        # Susun data dalam bentuk baris (list of lists)
-        rows = [headers]
-        for item in data:
-            rows.append([str(item.get(h, "")) for h in headers])
+        # Pengecekan data aman
+        if data and len(data) > 0:
+            headers = list(data[0].keys())
+            rows = [headers]
+            for item in data:
+                # Memastikan data diambil dengan aman
+                rows.append([str(item.get(h, "")) for h in headers])
             
-        # Update sheet dari sel A1
-        sheet.update(values=rows, range_name='A1')
-        
-    return sheet.spreadsheet.url
+            sheet.update('A1', rows)
+            
+        return spreadsheet.url
+    except Exception as e:
+        import traceback
+        traceback.print_exc() # Menampilkan error asli di terminal
+        raise Exception(f"Gagal sinkronisasi: {str(e)}")

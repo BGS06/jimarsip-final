@@ -70,13 +70,14 @@ def delete_arsip(id: int, db: Session = Depends(database.get_db)):
 
 @router.post("/backup", status_code=status.HTTP_200_OK)
 def backup_arsip(provider: str, db: Session = Depends(database.get_db)):
-    """
-    Endpoint untuk membackup arsip ke Google Drive atau Spreadsheet.
-    Pastikan file credentials.json sudah ada di root backend.
-    """
     if provider not in ["drive", "spreadsheet"]:
         raise HTTPException(status_code=400, detail="Pilihan provider hanya 'drive' atau 'spreadsheet'")
     
+    # TAMBAHKAN INI: Cek apakah ada data di database
+    semua_arsip = db.query(models.ArsipDokumen).all()
+    if not semua_arsip:
+        raise HTTPException(status_code=400, detail="Data arsip kosong, tidak ada yang bisa di-backup.")
+
     try:
         if provider == "drive":
             # Kompres folder uploads menjadi file zip sementara
@@ -87,7 +88,7 @@ def backup_arsip(provider: str, db: Session = Depends(database.get_db)):
             final_zip = zip_path + '.zip'
             
             # Upload file zip ke Google Drive (menggunakan Folder ID dari screenshot)
-            FOLDER_ID = "1Rnb6DJCDtO6uJWDwT8lYdcYTL4KflS7h"
+            FOLDER_ID = "1483gJK6jaNL266Z3Y20qXbuWYMz8ZN6EZMW8C3_H6RU"
             link = google_service.upload_to_drive(final_zip, zip_filename, folder_id=FOLDER_ID)
             
             if os.path.exists(final_zip):
@@ -110,10 +111,11 @@ def backup_arsip(provider: str, db: Session = Depends(database.get_db)):
                 })
                 
             # Sinkronkan ke Google Spreadsheet (menggunakan Spreadsheet ID dari screenshot)
-            SPREADSHEET_ID = "1-QOoBlzVl12QreG6Z6QbesyYy4IR90hr9vqTdPClB2k"
+            SPREADSHEET_ID = "1483gJK6jaNL266Z3Y20qXbuWYMz8ZN6EZMW8C3_H6RU"
             link = google_service.create_or_update_spreadsheet(SPREADSHEET_ID, data_export)
             
             return {"message": "Data arsip berhasil dicadangkan ke Google Spreadsheet", "status": "success", "link": link}
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal melakukan backup: {str(e)}")
+        print(f"DEBUG ERROR: {str(e)}") # Ini akan memunculkan error detail di terminal
+        raise HTTPException(status_code=500, detail=str(e)) # Mengirim error ke Frontend

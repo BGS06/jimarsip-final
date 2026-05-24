@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, FileText, FileBarChart, Settings, LogOut, Search, Home } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { LayoutDashboard, Users, FileText, FileBarChart, Settings, LogOut, Home } from 'lucide-react';
 
 const navLinks = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -16,28 +15,6 @@ const navLinks = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  
-  const [userName, setUserName] = useState('');
-  const [userRole, setUserRole] = useState('');
-
-  useEffect(() => {
-    const role = localStorage.getItem('user_role');
-    const name = localStorage.getItem('user_name');
-    if (!role) {
-      router.push('/');
-    } else {
-      setUserRole(role);
-      setUserName(name || '');
-    }
-  }, [router]);
-
-  const handleLogout = (e: React.MouseEvent) => {
-    e.preventDefault();
-    localStorage.removeItem('user_role');
-    localStorage.removeItem('user_name');
-    router.push('/');
-  };
 
   return (
     <div className="flex min-h-screen bg-[#F5F7FB]">
@@ -65,26 +42,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className="p-4 mt-auto border-t border-slate-800">
-          <a href="#" onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white transition-colors text-sm font-medium">
+          <Link href="/" className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white transition-colors text-sm font-medium">
             <LogOut className="w-5 h-5" /> Logout
-          </a>
+          </Link>
         </div>
       </aside>
 
       <div className="pl-64 flex-1 flex flex-col">
-        <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-10 print-hide">
-          <div className="relative w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <input type="text" placeholder="Cari sesuatu..." className="w-full bg-slate-50 border border-gray-100 rounded-2xl py-2.5 pl-11 pr-4 text-sm font-medium text-gray-800 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" />
-          </div>
-          <div className="flex items-center gap-3 border-l pl-6 border-gray-100">
+        <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-end px-8 sticky top-0 z-10 print-hide">
+          <div className="flex items-center gap-3">
             <div className="text-right">
-              <p className="text-sm font-bold text-gray-900">{userName || 'Loading...'}</p>
-              <p className="text-xs text-gray-500 font-medium capitalize">{userRole || 'User'}</p>
+              <p className="text-sm font-bold text-gray-900">Admin Desa</p>
+              <p className="text-xs text-gray-500 font-medium">Administrator</p>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold shadow-sm">
-              {userName ? userName.substring(0, 2).toUpperCase() : 'AD'}
-            </div>
+            <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold shadow-sm">AD</div>
           </div>
         </header>
         <main className="p-8">{children}</main>
